@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Loading Spinner</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      background: #f0f0f0;
+    }
+
+    .spinner-container {
+      position: relative;
+      width: 73px;
+      height: 73px;
+    }
+
+    .piece {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 73px;
+      height: 73px;
+      animation: spinnerFade 1000ms infinite linear;
+    }
+
+    .piece:nth-child(1) {
+      animation-delay: 0ms;
+    }
+
+    .piece:nth-child(2) {
+      animation-delay: 166.67ms;
+    }
+
+    .piece:nth-child(3) {
+      animation-delay: 333.34ms;
+    }
+
+    .piece:nth-child(4) {
+      animation-delay: 500ms;
+    }
+
+    .piece:nth-child(5) {
+      animation-delay: 666.67ms;
+    }
+
+    .piece:nth-child(6) {
+      animation-delay: 833.34ms;
+    }
+
+    @keyframes spinnerFade {
+      0% {
+        opacity: 1;
+      }
+      100% {
+        opacity: 0;
+      }
+    }
+
+    .piece img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="spinner-container">
+    <div class="piece">
+      <img src="piece/piece=1.svg" alt="piece 1">
+    </div>
+    <div class="piece">
+      <img src="piece/piece=2.svg" alt="piece 2">
+    </div>
+    <div class="piece">
+      <img src="piece/piece=3.svg" alt="piece 3">
+    </div>
+    <div class="piece">
+      <img src="piece/piece=4.svg" alt="piece 4">
+    </div>
+    <div class="piece">
+      <img src="piece/piece=5.svg" alt="piece 5">
+    </div>
+    <div class="piece">
+      <img src="piece/piece=6.svg" alt="piece 6">
+    </div>
+  </div>
+</body>
+</html>
