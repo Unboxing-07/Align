@@ -1,8 +1,12 @@
+import { useState } from "react"
 import { Logo } from "../components/Logo"
 import { WorkspaceCard } from "../components/WorkspaceCard"
 import { AddWorkspaceCard } from "../components/AddWorkspaceCard"
+import { CreateWorkspaceModal } from "../components/CreateWorkspaceModal"
 
 export const WorkspaceList = () => {
+  const [isModalOpen, setIsModalOpen] = useState(false)
+
   // Mock data - 나중에 API로 대체
   const workspaces = [
     {
@@ -18,6 +22,11 @@ export const WorkspaceList = () => {
       assignees: ["example@email.com", "user@test.com", "member@workspace.com"],
     },
   ]
+
+  const handleCreateWorkspace = (name: string) => {
+    console.log("Creating workspace:", name)
+    // TODO: API 호출로 워크스페이스 생성
+  }
 
   return (
     <div className="w-full min-h-screen bg-white relative">
@@ -37,9 +46,15 @@ export const WorkspaceList = () => {
             />
           ))}
 
-          <AddWorkspaceCard onClick={() => console.log("Add new workspace")} />
+          <AddWorkspaceCard onClick={() => setIsModalOpen(true)} />
         </div>
       </div>
+
+      <CreateWorkspaceModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onCreate={handleCreateWorkspace}
+      />
     </div>
   )
 }
