@@ -3,5 +3,7 @@
 
 * {
   box-sizing: border-box;
-  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui,
+    sans-serif;
+  color: (--color-black);
 }
