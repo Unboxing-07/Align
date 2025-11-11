@@ -1,0 +1,11 @@
+@theme inline {
+  --color-blue: #2b34d9;
+
+  --color-white: #ffffff;
+
+  --color-gray-100: #d9d9d9;
+  --color-gray-200: #828282;
+  --color-gray-300: #4d4d4d;
+
+  --color-black: #101010;
+}
