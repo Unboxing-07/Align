@@ -11,3 +11,16 @@
     sans-serif;
   color: (--color-black);
 }
+
+@keyframes spinnerFade {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-spinner-fade {
+  animation: spinnerFade 1000ms infinite linear;
+}
