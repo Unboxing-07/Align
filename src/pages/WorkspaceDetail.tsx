@@ -50,7 +50,7 @@ export const WorkspaceDetail = () => {
         </div>
 
         <div className="flex flex-col items-end gap-1">
-          <LineButton>Member</LineButton>
+          <LineButton onClick={() => navigate(`/workspace/${id}/members`)}>Member</LineButton>
           <LineButton>My Tasks</LineButton>
         </div>
       </div>
