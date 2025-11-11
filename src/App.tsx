@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
-import { ReactFlow, Background, Controls } from 'reactflow'
+import { ReactFlow, Background, Controls, Node, Edge } from 'reactflow'
 import axios from 'axios'
 import 'reactflow/dist/style.css'
 
 const queryClient = new QueryClient()
 
-const initialNodes = [
+const initialNodes: Node[] = [
   {
     id: '1',
     type: 'input',
@@ -26,17 +26,24 @@ const initialNodes = [
   },
 ]
 
-const initialEdges = [
+const initialEdges: Edge[] = [
   { id: 'e1-2', source: '1', target: '2' },
   { id: 'e2-3', source: '2', target: '3' },
 ]
 
+interface Post {
+  userId: number
+  id: number
+  title: string
+  body: string
+}
+
 function FlowExample() {
-  const [nodes] = useState(initialNodes)
-  const [edges] = useState(initialEdges)
+  const [nodes] = useState<Node[]>(initialNodes)
+  const [edges] = useState<Edge[]>(initialEdges)
 
   return (
-    <div className="h-96 border-2 border-gray-300 rounded-lg">
+    <div style={{ width: '100%', height: '384px' }} className="border-2 border-gray-300 rounded-lg">
       <ReactFlow nodes={nodes} edges={edges}>
         <Background />
         <Controls />
@@ -46,10 +53,10 @@ function FlowExample() {
 }
 
 function DataFetcher() {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery<Post>({
     queryKey: ['example'],
     queryFn: async () => {
-      const response = await axios.get('https://jsonplaceholder.typicode.com/posts/1')
+      const response = await axios.get<Post>('https://jsonplaceholder.typicode.com/posts/1')
       return response.data
     },
   })
@@ -71,7 +78,7 @@ function App() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-8">
         <div className="max-w-6xl mx-auto">
           <h1 className="text-4xl font-bold text-gray-800 mb-8 text-center">
-            Vite + React + ReactFlow + React Query + Tailwind
+            Vite + React + TypeScript + ReactFlow + React Query + Tailwind
           </h1>
 
           <div className="space-y-8">
