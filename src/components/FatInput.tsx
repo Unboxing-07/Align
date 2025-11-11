@@ -1,3 +1,5 @@
+import { twMerge } from "tailwind-merge"
+
 interface FatInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   width?: string | number
 }
@@ -9,7 +11,7 @@ export const FatInput = ({ width, className = "", style, ...props }: FatInputPro
 
   return <input
     type="text"
-    className={`${base} ${widthClass || 'w-92.5'} ${className}`.trim()}
+    className={twMerge(base, widthClass || 'w-92.5', className)}
     style={{ ...widthStyle, ...style }}
     {...props}
   />

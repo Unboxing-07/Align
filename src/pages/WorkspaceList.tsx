@@ -1,10 +1,12 @@
 import { useState } from "react"
+import { useNavigate } from "react-router-dom"
 import { Logo } from "../components/Logo"
 import { WorkspaceCard } from "../components/WorkspaceCard"
 import { AddWorkspaceCard } from "../components/AddWorkspaceCard"
 import { CreateWorkspaceModal } from "../components/CreateWorkspaceModal"
 
 export const WorkspaceList = () => {
+  const navigate = useNavigate()
   const [isModalOpen, setIsModalOpen] = useState(false)
 
   // Mock data - 나중에 API로 대체
@@ -30,10 +32,10 @@ export const WorkspaceList = () => {
 
   return (
     <div className="w-full min-h-screen bg-white relative">
-      <Logo />
+      <Logo absolute />
 
       <div className="flex flex-col items-center pt-42.5">
-        <h1 className="text-black text-[28px] mb-14">Choose a workspace</h1>
+        <h1 className="text-black text-[28px] mb-6">Choose a workspace</h1>
 
         <div className="w-196 flex flex-col gap-3.5">
           {workspaces.map((workspace) => (
@@ -42,7 +44,7 @@ export const WorkspaceList = () => {
               name={workspace.name}
               remainingWorkflows={workspace.remainingWorkflows}
               assignees={workspace.assignees}
-              onClick={() => console.log(`Navigate to workspace ${workspace.id}`)}
+              onClick={() => navigate(`/workspace/${workspace.id}`)}
             />
           ))}
 

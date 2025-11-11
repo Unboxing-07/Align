@@ -1,5 +1,9 @@
-export const Logo = () => {
-  return <div className="w-17.5 h-6 absolute left-6 top-3.5"><svg width="70" height="24" viewBox="0 0 70 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+type LogoPropsType = {
+  absolute?: boolean;
+}
+
+export const Logo = ({ absolute }: LogoPropsType) => {
+  return <div className={`w-17.5 h-6 ${absolute && "absolute"} left-6 top-3.5`}><svg width="70" height="24" viewBox="0 0 70 24" fill="none" xmlns="http://www.w3.org/2000/svg">
     <g clip-path="url(#clip0_57_630)">
       <path d="M12 8L8.5 6V2L12 0L15.5 2V6L12 8Z" fill="#101010" />
       <path d="M19 12L15.5 10V6L19 4L22.5 6V10L19 12Z" fill="#101010" />
