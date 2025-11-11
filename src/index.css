@@ -1,6 +1,10 @@
 @import "tailwindcss";
 @import "./style/color.css";
 
+@theme inline {
+  --shadow-4: 0 0 4px 0;
+}
+
 * {
   box-sizing: border-box;
   font-family: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui,

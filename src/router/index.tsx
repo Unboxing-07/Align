@@ -1,7 +1,7 @@
 import { createBrowserRouter, Navigate } from "react-router-dom"
 import { Login } from "../pages/Login"
 import { Signup } from "../pages/Signup"
-import { Workspace } from "../pages/Workspace"
+import { WorkspaceList } from "../pages/WorkspaceList"
 
 export const router = createBrowserRouter([
   {
@@ -18,6 +18,6 @@ export const router = createBrowserRouter([
   },
   {
     path: "/workspace",
-    element: <Workspace />,
+    element: <WorkspaceList />,
   },
 ])
