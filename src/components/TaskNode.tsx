@@ -22,16 +22,30 @@ export const TaskNode = ({ task }: TaskNodeProps) => {
     }
   };
 
+  // Get status-based shadow
+  const getStatusShadow = () => {
+    switch (task.status) {
+      case 'progress':
+        return 'shadow-[0px_0px_4px_2px_rgba(255,174,0,0.50)]';
+      case 'completed':
+        return 'shadow-[0px_0px_4px_2px_rgba(43,52,217,0.50)]';
+      case 'done':
+        return 'shadow-[0px_0px_4px_2px_rgba(0,132,26,0.50)]';
+      default: // pending
+        return 'shadow-md';
+    }
+  };
+
   return (
-    <div className="w-[284px] h-[154px] bg-white border-2 border-gray-100 rounded-xl shadow-md hover:shadow-lg transition-shadow cursor-pointer">
+    <div className={`w-[284px] h-[154px] bg-white border border-gray-100 rounded-xl ${getStatusShadow()} transition-all duration-200 ease-in-out cursor-pointer`}>
       <div className="w-full h-full p-4 flex flex-col">
         {/* Title */}
-        <h3 className="text-black text-base font-semibold mb-2 truncate">
+        <h3 className="text-black text-base font-semibold mb-0.5 truncate">
           {task.title}
         </h3>
 
         {/* Description */}
-        <p className="text-gray-200 text-sm leading-tight mb-3 overflow-hidden line-clamp-2 flex-1">
+        <p className="text-gray-200 text-sm leading-tight mb-2 w-[252px] overflow-hidden line-clamp-2 flex-1">
           {task.description}
         </p>
 
