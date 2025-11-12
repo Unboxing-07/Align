@@ -328,4 +328,78 @@ router.delete('/:id', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// GET /api/workspaces/:id/my-tasks - Get my tasks in this workspace
+router.get('/:id/my-tasks', async (req: AuthRequest, res: Response) => {
+  try {
+    const { id } = req.params;
+
+    const workspace = await prisma.workspace.findUnique({
+      where: { id },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: {
+                email: true,
+              },
+            },
+          },
+        },
+        workflows: true,
+      },
+    });
+
+    if (!workspace) {
+      return res.status(404).json({ error: 'Workspace not found' });
+    }
+
+    // Check if user is a member
+    const member = workspace.members.find((m) => m.userId === req.userId);
+    if (!member) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    const currentUserEmail = member.user.email;
+
+    // Find all tasks assigned to current user (exclude 'done' status)
+    const myTasks: Array<{
+      id: string;
+      title: string;
+      description: string;
+      deadline: Date | string;
+      workflowId: string;
+      workflowName: string;
+      nodeId: string;
+      status: string;
+    }> = [];
+
+    workspace.workflows.forEach((workflow) => {
+      const nodes = Array.isArray(workflow.nodes) ? workflow.nodes : [];
+
+      nodes.forEach((node: any) => {
+        if (node.data?.assignee?.email === currentUserEmail && node.data?.status !== 'done') {
+          myTasks.push({
+            id: `${workflow.id}-${node.id}`,
+            title: node.data.title || 'Untitled Task',
+            description: node.data.description || '',
+            deadline: node.data.deadline || new Date(),
+            workflowId: workflow.id,
+            workflowName: workflow.name,
+            nodeId: node.id,
+            status: node.data.status || 'pending',
+          });
+        }
+      });
+    });
+
+    res.json({
+      workspaceName: workspace.name,
+      tasks: myTasks,
+    });
+  } catch (error) {
+    console.error('Get my tasks error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 export default router;

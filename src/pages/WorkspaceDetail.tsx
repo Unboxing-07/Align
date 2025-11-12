@@ -92,14 +92,14 @@ export const WorkspaceDetail = () => {
 
         <div className="flex flex-col items-end gap-1">
           <LineButton onClick={() => navigate(`/workspace/${id}/members`)}>Member</LineButton>
-          <LineButton>My Tasks</LineButton>
+          <LineButton onClick={() => navigate(`/workspace/${id}/my-tasks`)}>My Tasks</LineButton>
         </div>
       </div>
 
 
 
       {/* Main content */}
-      <div className="flex flex-col items-center pt-42.5">
+      <div className="flex flex-col items-center pt-22.5">
         <h1 className="text-black text-[28px] mb-6">{workspace.name}</h1>
 
         <div className="relative w-135 mb-3.5">

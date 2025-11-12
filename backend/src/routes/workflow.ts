@@ -138,6 +138,14 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
     const { id } = req.params;
     const { name, nodes, edges } = req.body;
 
+    console.log('Update workflow:', {
+      id,
+      hasName: name !== undefined,
+      nodesCount: Array.isArray(nodes) ? nodes.length : 0,
+      edgesCount: Array.isArray(edges) ? edges.length : 0,
+      edges: edges
+    });
+
     const workflow = await prisma.workflow.findUnique({
       where: { id },
       include: {
@@ -174,13 +182,20 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
       updateData.nodes = updateNodeStatuses(nodes, updatedEdges);
     }
 
-    if (edges !== undefined) updateData.edges = edges;
+    if (edges !== undefined) {
+      updateData.edges = edges;
+      console.log('Saving edges:', edges);
+    }
 
     // Update workflow
     const updatedWorkflow = await prisma.workflow.update({
       where: { id },
       data: updateData,
     });
+
+    console.log('Workflow updated successfully with',
+      Array.isArray(updatedWorkflow.edges) ? updatedWorkflow.edges.length : 0,
+      'edges');
 
     res.json(updatedWorkflow);
   } catch (error) {

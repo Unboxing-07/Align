@@ -65,6 +65,21 @@ export const TaskDetailPanel = ({
     }
   };
 
+  const formatDateForInput = (date: Date | string) => {
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (isNaN(dateObj.getTime())) {
+        return "";
+      }
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    } catch {
+      return "";
+    }
+  };
+
   const handleEditToggle = () => {
     if (isEditMode) {
       // Cancel edit - restore original task
@@ -285,9 +300,24 @@ export const TaskDetailPanel = ({
           </div>
 
           {/* Deadline */}
-          <p className="text-center text-gray-300 text-[17px] mb-6">
-            deadline: {formatDeadline(editedTask.deadline)}
-          </p>
+          <div className="mb-6">
+            <label className="block text-black text-base mb-2">DEADLINE</label>
+            {isEditMode ? (
+              <input
+                type="date"
+                value={formatDateForInput(editedTask.deadline)}
+                onChange={(e) => {
+                  const newDate = e.target.value ? new Date(e.target.value) : editedTask.deadline;
+                  setEditedTask({ ...editedTask, deadline: newDate });
+                }}
+                className="w-full h-12 border border-gray-100 rounded-lg px-4 text-base text-black outline-none focus:border-blue focus:ring-2 focus:ring-blue/20 transition-all duration-200"
+              />
+            ) : (
+              <div className="w-full h-12 border border-gray-100 rounded-lg px-4 flex items-center bg-gray-50">
+                <p className="text-base text-black">{formatDeadline(editedTask.deadline)}</p>
+              </div>
+            )}
+          </div>
 
           {/* Done/Save Button */}
           <button

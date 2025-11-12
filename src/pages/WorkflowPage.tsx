@@ -15,6 +15,7 @@ import {
   Controls,
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
+import ELK from "elkjs/lib/elk.bundled.js"
 import { Logo } from "../components/Logo"
 import { LineButton } from "../components/LineButton"
 import { workflowService } from "../services/workflow"
@@ -24,6 +25,8 @@ import { api } from "../lib/api"
 import type { TaskType } from "../types/task"
 import type { AssigneeType, WorkspaceType } from "../types/workspace"
 import { PenLine, Check, X } from "lucide-react"
+
+const elk = new ELK()
 
 const initialNodes: Node[] = []
 
@@ -36,7 +39,7 @@ const nodeTypes = {
 const WorkflowPageContent = () => {
   const { id: workspaceId, workflowId } = useParams()
   const navigate = useNavigate()
-  const { screenToFlowPosition } = useReactFlow()
+  const { screenToFlowPosition, fitView } = useReactFlow()
   const [nodes, setNodes] = useState<Node[]>(initialNodes)
   const [edges, setEdges] = useState<Edge[]>(initialEdges)
   const [workflowName, setWorkflowName] = useState<string>("")
@@ -47,6 +50,69 @@ const WorkflowPageContent = () => {
   const [error, setError] = useState("")
   const [selectedNode, setSelectedNode] = useState<Node<TaskType> | null>(null)
   const [isPanelOpen, setIsPanelOpen] = useState(false)
+  const [isLayouting, setIsLayouting] = useState(false)
+
+  // ELK layout function
+  const getLayoutedElements = useCallback(async (nodes: Node[], edges: Edge[]) => {
+    if (nodes.length === 0) return { nodes, edges }
+
+    const graph = {
+      id: "root",
+      layoutOptions: {
+        "elk.algorithm": "layered",
+        "elk.direction": "RIGHT",
+        "elk.spacing.nodeNode": "80",
+        "elk.layered.spacing.nodeNodeBetweenLayers": "100",
+      },
+      children: nodes.map((node) => ({
+        id: node.id,
+        width: 284,
+        height: 154,
+      })),
+      edges: edges.map((edge) => ({
+        id: edge.id,
+        sources: [edge.source],
+        targets: [edge.target],
+      })),
+    }
+
+    const layoutedGraph = await elk.layout(graph)
+
+    const layoutedNodes = nodes.map((node) => {
+      const layoutedNode = layoutedGraph.children?.find((n) => n.id === node.id)
+      return {
+        ...node,
+        position: {
+          x: layoutedNode?.x ?? node.position.x,
+          y: layoutedNode?.y ?? node.position.y,
+        },
+      }
+    })
+
+    return { nodes: layoutedNodes, edges }
+  }, [])
+
+  // Apply layout when nodes or edges change
+  useEffect(() => {
+    if (nodes.length === 0 || isLayouting) return
+
+    const layoutTimer = setTimeout(async () => {
+      setIsLayouting(true)
+      try {
+        const { nodes: layoutedNodes } = await getLayoutedElements(nodes, edges)
+        setNodes(layoutedNodes)
+        setTimeout(() => {
+          fitView({ padding: 0.2, duration: 200 })
+        }, 50)
+      } catch (err) {
+        console.error("Layout error:", err)
+      } finally {
+        setIsLayouting(false)
+      }
+    }, 50)
+
+    return () => clearTimeout(layoutTimer)
+  }, [JSON.stringify(edges.map(e => ({s: e.source, t: e.target}))), nodes.length])
 
   useEffect(() => {
     if (workflowId) {
@@ -63,10 +129,16 @@ const WorkflowPageContent = () => {
 
     const timer = setTimeout(async () => {
       try {
+        console.log('Auto-saving workflow:', {
+          nodesCount: nodes.length,
+          edgesCount: edges.length,
+          edges: edges
+        })
         await workflowService.updateWorkflowNodes(workflowId, {
           nodes,
           edges,
         })
+        console.log('Auto-save successful')
       } catch (err) {
         console.error("Failed to auto-save workflow:", err)
       }
@@ -223,12 +295,6 @@ const WorkflowPageContent = () => {
       // Only allow creating the first node via click
       if (nodes.length > 0) return
 
-      // Get the position in flow coordinates
-      const position = screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
-      })
-
       // Create a default task data
       // First node starts as 'progress', others start as 'pending'
       const newTask: TaskType = {
@@ -245,11 +311,11 @@ const WorkflowPageContent = () => {
         status: "progress", // First node starts as in progress
       }
 
-      // Create a new node
+      // Create a new node (position will be set by ELK)
       const newNode: Node<TaskType> = {
         id: `task-${Date.now()}`,
         type: "task",
-        position,
+        position: { x: 0, y: 0 }, // ELK will calculate the actual position
         data: newTask,
       }
 
@@ -269,7 +335,7 @@ const WorkflowPageContent = () => {
         }
       }
     },
-    [nodes.length, screenToFlowPosition, workflowId]
+    [nodes.length, workflowId]
   )
 
   if (loading) {
@@ -353,6 +419,8 @@ const WorkflowPageContent = () => {
           onConnect={onConnect}
           onNodeClick={onNodeClick}
           onPaneClick={onPaneClick}
+          nodesDraggable={false}
+          nodesConnectable={true}
           fitView
           style={{
             backgroundColor: "#efefef"
