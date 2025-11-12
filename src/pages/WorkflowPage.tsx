@@ -23,6 +23,7 @@ import { TaskDetailPanel } from "../components/TaskDetailPanel"
 import { api } from "../lib/api"
 import type { TaskType } from "../types/task"
 import type { AssigneeType, WorkspaceType } from "../types/workspace"
+import { PenLine, Check, X } from "lucide-react"
 
 const initialNodes: Node[] = []
 
@@ -39,6 +40,8 @@ const WorkflowPageContent = () => {
   const [nodes, setNodes] = useState<Node[]>(initialNodes)
   const [edges, setEdges] = useState<Edge[]>(initialEdges)
   const [workflowName, setWorkflowName] = useState<string>("")
+  const [editingName, setEditingName] = useState(false)
+  const [editedWorkflowName, setEditedWorkflowName] = useState<string>("")
   const [workspaceMembers, setWorkspaceMembers] = useState<AssigneeType[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
@@ -104,6 +107,29 @@ const WorkflowPageContent = () => {
     } catch (err) {
       console.error("Failed to load workspace members:", err)
     }
+  }
+
+  const handleStartEditName = () => {
+    setEditedWorkflowName(workflowName)
+    setEditingName(true)
+  }
+
+  const handleSaveWorkflowName = async () => {
+    if (!workflowId || !editedWorkflowName.trim()) return
+
+    try {
+      await workflowService.updateWorkflow(workflowId, editedWorkflowName)
+      setWorkflowName(editedWorkflowName)
+      setEditingName(false)
+    } catch (err) {
+      console.error("Failed to update workflow name:", err)
+      setError("Failed to update workflow name")
+    }
+  }
+
+  const handleCancelEditName = () => {
+    setEditingName(false)
+    setEditedWorkflowName("")
   }
 
   const onNodesChange = useCallback(
@@ -270,7 +296,47 @@ const WorkflowPageContent = () => {
       <div className="flex justify-between items-center px-6 py-3.5 border-b border-gray-100">
         <div className="flex gap-2.5 items-center">
           <Logo />
-          <div className="text-gray-200">/ {workflowName}</div>
+          <div className="text-gray-200">/</div>
+          {editingName ? (
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={editedWorkflowName}
+                onChange={(e) => setEditedWorkflowName(e.target.value)}
+                className="text-gray-200 text-base outline-none border-b border-gray-100 px-1"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleSaveWorkflowName()
+                  if (e.key === "Escape") handleCancelEditName()
+                }}
+              />
+              <button
+                onClick={handleSaveWorkflowName}
+                className="p-1 hover:bg-gray-50 rounded"
+                title="Save"
+              >
+                <Check size={16} className="text-blue" />
+              </button>
+              <button
+                onClick={handleCancelEditName}
+                className="p-1 hover:bg-gray-50 rounded"
+                title="Cancel"
+              >
+                <X size={16} className="text-gray-200" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <div className="text-gray-200">{workflowName}</div>
+              <button
+                onClick={handleStartEditName}
+                className="p-1 hover:bg-gray-50 rounded"
+                title="Edit workflow name"
+              >
+                <PenLine size={16} className="text-gray-200" />
+              </button>
+            </div>
+          )}
         </div>
 
         <LineButton gray onClick={() => navigate(`/workspace/${workspaceId}`)} isThin>go to workspace</LineButton>

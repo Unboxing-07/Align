@@ -11,7 +11,7 @@ export const WorkflowCard = ({ name, doneCount, totalCount, onClick }: WorkflowC
 
   return (
     <div
-      className="w-full h-15 bg-white border border-gray-100 rounded p-4 flex items-center justify-between cursor-pointer hover:border-gray-200 transition-colors"
+      className="w-full h-15 bg-white border border-gray-100 rounded p-4 flex items-center justify-between cursor-pointer hover:shadow-4 hover:shadow-blue/20 transition-colors"
       onClick={onClick}
     >
       <p className="text-black text-base">{name}</p>
