@@ -8,7 +8,7 @@ type TaskDetailPanelProps = {
   task: TaskType;
   isOpen: boolean;
   onClose: () => void;
-  onUpdate?: (task: TaskType) => void;
+  onUpdate?: (task: TaskType, shouldReload?: boolean) => void;
   previousNodeOutput?: string;
   workspaceMembers?: AssigneeType[];
 };
@@ -108,8 +108,8 @@ export const TaskDetailPanel = ({
   };
 
   const handleOutputChange = useCallback((value: string) => {
-    const updatedTask = { ...editedTask, output: value };
-    setEditedTask(updatedTask);
+    // Update edited task with new output value
+    setEditedTask((prev) => ({ ...prev, output: value }));
 
     // Clear previous timeout
     if (outputSaveTimeout.current) {
@@ -118,22 +118,27 @@ export const TaskDetailPanel = ({
 
     // Debounce auto-save (wait 1 second after user stops typing)
     outputSaveTimeout.current = setTimeout(() => {
-      if (onUpdate && canEditOutput) {
-        let finalTask = updatedTask;
-        // Auto-transition to completed if output is written
-        if (value && value.trim() && updatedTask.status === 'progress') {
-          finalTask = { ...updatedTask, status: 'completed' };
-          setEditedTask(finalTask);
-        }
-        onUpdate(finalTask);
-        setOriginalTask(finalTask);
+      if (onUpdate) {
+        setEditedTask((currentTask) => {
+          // Auto-transition to completed if output is written and task is in progress
+          const shouldTransitionToCompleted =
+            value && value.trim() && currentTask.status === 'progress';
+
+          const finalTask = shouldTransitionToCompleted
+            ? { ...currentTask, output: value, status: 'completed' as const }
+            : { ...currentTask, output: value };
+
+          onUpdate(finalTask, false); // Don't reload on auto-save
+          setOriginalTask(finalTask);
+          return finalTask;
+        });
       }
     }, 1000);
-  }, [editedTask, onUpdate, canEditOutput]);
+  }, [onUpdate]);
 
   const handleDone = () => {
     if (onUpdate) {
-      onUpdate({ ...editedTask, status: "done" });
+      onUpdate({ ...editedTask, status: "done" }, true); // shouldReload = true
     }
     onClose();
   };

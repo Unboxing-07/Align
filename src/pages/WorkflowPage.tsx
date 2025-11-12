@@ -262,8 +262,8 @@ const WorkflowPageContent = () => {
   )
 
   const handleTaskUpdate = useCallback(
-    (updatedTask: TaskType) => {
-      if (!selectedNode) return
+    async (updatedTask: TaskType, shouldReload: boolean = false) => {
+      if (!selectedNode || !workflowId) return
 
       const updatedNodes = nodes.map((node) =>
         node.id === selectedNode.id
@@ -271,8 +271,24 @@ const WorkflowPageContent = () => {
           : node
       )
       setNodes(updatedNodes)
+
+      // If we need to reload (e.g., status changed to 'done'), save first then reload
+      if (shouldReload) {
+        try {
+          // Save the updated nodes to backend
+          await workflowService.updateWorkflowNodes(workflowId, {
+            nodes: updatedNodes,
+            edges,
+          })
+          // Reload workflow after successful save
+          await loadWorkflow()
+        } catch (err) {
+          console.error("Failed to save and reload workflow:", err)
+        }
+      }
+      // Otherwise, let the auto-save useEffect handle the save
     },
-    [selectedNode, nodes]
+    [selectedNode, nodes, edges, workflowId, loadWorkflow]
   )
 
   // Get previous node's output
