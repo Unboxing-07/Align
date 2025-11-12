@@ -19,7 +19,7 @@ export const Login = () => {
 
     try {
       await authService.login({ email, password })
-      navigate("/workspaces")
+      navigate("/workspace")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed")
     } finally {

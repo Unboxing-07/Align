@@ -20,7 +20,7 @@ export const Signup = () => {
 
     try {
       await authService.signup({ email, name, password })
-      navigate("/workspaces")
+      navigate("/workspace")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Signup failed")
     } finally {
