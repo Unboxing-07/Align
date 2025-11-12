@@ -146,7 +146,7 @@ export const WorkspaceDetail = () => {
               name={workflow.name}
               doneCount={workflow.doneNodeCount}
               totalCount={workflow.totalNodeCount}
-              onClick={() => console.log(`Navigate to workflow ${workflow.id}`)}
+              onClick={() => navigate(`/workspace/${id}/workflow/${workflow.id}`)}
             />
           ))}
         </div>

@@ -4,6 +4,7 @@ import { Signup } from "../pages/Signup"
 import { WorkspaceList } from "../pages/WorkspaceList"
 import { WorkspaceDetail } from "../pages/WorkspaceDetail"
 import { WorkspaceMembers } from "../pages/WorkspaceMembers"
+import { WorkflowPage } from "../pages/WorkflowPage"
 import { NotFound } from "../pages/NotFound"
 
 export const router = createBrowserRouter([
@@ -30,6 +31,10 @@ export const router = createBrowserRouter([
   {
     path: "/workspace/:id/members",
     element: <WorkspaceMembers />,
+  },
+  {
+    path: "/workspace/:id/workflow/:workflowId",
+    element: <WorkflowPage />,
   },
   {
     path: "*",
