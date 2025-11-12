@@ -1,6 +1,10 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import authRoutes from './routes/auth';
+import workspaceRoutes from './routes/workspace';
+import memberRoutes from './routes/member';
+import taskRoutes from './routes/task';
 
 dotenv.config();
 
@@ -17,10 +21,11 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'Align Backend is running' });
 });
 
-// Routes (will be added in Phase 3)
-// app.use('/api/auth', authRoutes);
-// app.use('/api/workspaces', workspaceRoutes);
-// app.use('/api/tasks', taskRoutes);
+// API Routes
+app.use('/api/auth', authRoutes);
+app.use('/api/workspaces', workspaceRoutes);
+app.use('/api/workspaces', memberRoutes);
+app.use('/api/tasks', taskRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -31,4 +36,5 @@ app.use((req, res) => {
 app.listen(PORT, () => {
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`📊 Prisma Studio: http://localhost:5555`);
+  console.log(`🌐 CORS enabled for: ${FRONTEND_URL}`);
 });
