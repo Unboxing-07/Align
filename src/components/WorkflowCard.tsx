@@ -7,6 +7,7 @@ type WorkflowCardProps = {
 
 export const WorkflowCard = ({ name, doneCount, totalCount, onClick }: WorkflowCardProps) => {
   const progress = totalCount > 0 ? (doneCount / totalCount) * 100 : 0
+  const isInProgress = totalCount === 0
 
   return (
     <div
@@ -16,9 +17,13 @@ export const WorkflowCard = ({ name, doneCount, totalCount, onClick }: WorkflowC
       <p className="text-black text-base">{name}</p>
 
       <div className="flex flex-col items-end gap-1">
-        <p className="text-gray-200 text-xs">
-          {doneCount} / {totalCount} Done
-        </p>
+        {isInProgress ? (
+          <p className="text-gray-200 text-xs">In Progress</p>
+        ) : (
+          <p className="text-gray-200 text-xs">
+            {doneCount} / {totalCount} Done
+          </p>
+        )}
         <div className="w-45 h-1 bg-gray-200 rounded relative overflow-hidden">
           <div
             className="absolute top-0 right-0 h-full bg-blue rounded transition-all"

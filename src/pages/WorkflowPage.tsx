@@ -2,48 +2,75 @@ import { useState, useCallback, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import {
   ReactFlow,
+  ReactFlowProvider,
   applyNodeChanges,
   applyEdgeChanges,
   addEdge,
-  Node,
-  Edge,
-  NodeChange,
-  EdgeChange,
-  Connection,
+  useReactFlow,
+  type Node,
+  type Edge,
+  type NodeChange,
+  type EdgeChange,
+  type Connection,
   Controls,
-  Background,
-  BackgroundVariant,
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
 import { Logo } from "../components/Logo"
 import { LineButton } from "../components/LineButton"
 import { workflowService } from "../services/workflow"
+import { TaskNodeWrapper } from "../components/TaskNodeWrapper"
+import { TaskDetailPanel } from "../components/TaskDetailPanel"
+import { api } from "../lib/api"
+import type { TaskType } from "../types/task"
+import type { AssigneeType, WorkspaceType } from "../types/workspace"
 
-const initialNodes: Node[] = [
-  {
-    id: "1",
-    type: "default",
-    position: { x: 250, y: 100 },
-    data: { label: "Start Node" },
-  },
-]
+const initialNodes: Node[] = []
 
 const initialEdges: Edge[] = []
 
-export const WorkflowPage = () => {
+const nodeTypes = {
+  task: TaskNodeWrapper,
+}
+
+const WorkflowPageContent = () => {
   const { id: workspaceId, workflowId } = useParams()
   const navigate = useNavigate()
+  const { screenToFlowPosition } = useReactFlow()
   const [nodes, setNodes] = useState<Node[]>(initialNodes)
   const [edges, setEdges] = useState<Edge[]>(initialEdges)
   const [workflowName, setWorkflowName] = useState<string>("")
+  const [workspaceMembers, setWorkspaceMembers] = useState<AssigneeType[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
+  const [selectedNode, setSelectedNode] = useState<Node<TaskType> | null>(null)
+  const [isPanelOpen, setIsPanelOpen] = useState(false)
 
   useEffect(() => {
     if (workflowId) {
       loadWorkflow()
     }
-  }, [workflowId])
+    if (workspaceId) {
+      loadWorkspaceMembers()
+    }
+  }, [workflowId, workspaceId])
+
+  // Auto-save nodes and edges when they change
+  useEffect(() => {
+    if (!workflowId || loading) return
+
+    const timer = setTimeout(async () => {
+      try {
+        await workflowService.updateWorkflowNodes(workflowId, {
+          nodes,
+          edges,
+        })
+      } catch (err) {
+        console.error("Failed to auto-save workflow:", err)
+      }
+    }, 1000) // Debounce for 1 second
+
+    return () => clearTimeout(timer)
+  }, [nodes, edges, workflowId, loading])
 
   const loadWorkflow = async () => {
     if (!workflowId) return
@@ -54,25 +81,28 @@ export const WorkflowPage = () => {
       setWorkflowName(workflow.name)
 
       // Load nodes and edges from workflow if they exist
-      if (workflow.nodes && workflow.nodes.length > 0) {
-        setNodes(workflow.nodes.map(node => ({
-          id: node.id,
-          position: { x: 0, y: 0 }, // Will be set from saved data
-          data: node.data,
-        })))
+      if (workflow.nodes && Array.isArray(workflow.nodes) && workflow.nodes.length > 0) {
+        setNodes(workflow.nodes)
       }
 
-      if (workflow.edges && workflow.edges.length > 0) {
-        setEdges(workflow.edges.map(edge => ({
-          id: edge.id,
-          source: edge.from,
-          target: edge.to,
-        })))
+      if (workflow.edges && Array.isArray(workflow.edges) && workflow.edges.length > 0) {
+        setEdges(workflow.edges)
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load workflow")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadWorkspaceMembers = async () => {
+    if (!workspaceId) return
+
+    try {
+      const workspace = await api.get<WorkspaceType>(`/workspaces/${workspaceId}`)
+      setWorkspaceMembers(workspace.assigneeList || [])
+    } catch (err) {
+      console.error("Failed to load workspace members:", err)
     }
   }
 
@@ -89,6 +119,131 @@ export const WorkflowPage = () => {
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
     []
+  )
+
+  const onNodeClick = useCallback(
+    (_event: React.MouseEvent, node: Node) => {
+      const taskNode = node as Node<TaskType>
+
+      // Check if node should transition from pending to progress
+      if (taskNode.data.status === 'pending') {
+        // Find incoming edges (previous nodes)
+        const incomingEdges = edges.filter((edge) => edge.target === taskNode.id)
+
+        // If no previous nodes or all previous nodes are done, change to progress
+        const shouldBeInProgress = incomingEdges.length === 0 ||
+          incomingEdges.every((edge) => {
+            const sourceNode = nodes.find((n) => n.id === edge.source) as Node<TaskType> | undefined
+            return sourceNode?.data?.status === 'done'
+          })
+
+        if (shouldBeInProgress) {
+          // Update node status to progress
+          const updatedNode = {
+            ...taskNode,
+            data: {
+              ...taskNode.data,
+              status: 'progress' as const,
+            },
+          }
+
+          const updatedNodes = nodes.map((n) =>
+            n.id === taskNode.id ? updatedNode : n
+          )
+          setNodes(updatedNodes)
+          setSelectedNode(updatedNode)
+          setIsPanelOpen(true)
+          return
+        }
+      }
+
+      setSelectedNode(taskNode)
+      setIsPanelOpen(true)
+    },
+    [nodes, edges]
+  )
+
+  const handleTaskUpdate = useCallback(
+    (updatedTask: TaskType) => {
+      if (!selectedNode) return
+
+      const updatedNodes = nodes.map((node) =>
+        node.id === selectedNode.id
+          ? { ...node, data: updatedTask }
+          : node
+      )
+      setNodes(updatedNodes)
+    },
+    [selectedNode, nodes]
+  )
+
+  // Get previous node's output
+  const getPreviousNodeOutput = useCallback((): string => {
+    if (!selectedNode) return ""
+
+    // Find edges that connect to the selected node (where selected node is the target)
+    const incomingEdge = edges.find((edge) => edge.target === selectedNode.id)
+    if (!incomingEdge) return ""
+
+    // Find the source node
+    const sourceNode = nodes.find((node) => node.id === incomingEdge.source) as Node<TaskType> | undefined
+    if (!sourceNode || !sourceNode.data) return ""
+
+    return sourceNode.data.output || ""
+  }, [selectedNode, edges, nodes])
+
+  const onPaneClick = useCallback(
+    async (event: React.MouseEvent) => {
+      // Only allow creating the first node via click
+      if (nodes.length > 0) return
+
+      // Get the position in flow coordinates
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      })
+
+      // Create a default task data
+      // First node starts as 'progress', others start as 'pending'
+      const newTask: TaskType = {
+        title: "New Task",
+        description: "Click to edit description",
+        assignee: {
+          name: "Unassigned",
+          email: "user@example.com",
+          role: "Role",
+        },
+        input: "",
+        output: "",
+        deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
+        status: "progress", // First node starts as in progress
+      }
+
+      // Create a new node
+      const newNode: Node<TaskType> = {
+        id: `task-${Date.now()}`,
+        type: "task",
+        position,
+        data: newTask,
+      }
+
+      const newNodes = [newNode]
+      setNodes(newNodes)
+
+      // Save to backend
+      if (workflowId) {
+        try {
+          await workflowService.updateWorkflowNodes(workflowId, {
+            nodes: newNodes,
+            edges: [],
+          })
+        } catch (err) {
+          console.error("Failed to save node:", err)
+          setError("Failed to save node")
+        }
+      }
+    },
+    [nodes.length, screenToFlowPosition, workflowId]
   )
 
   if (loading) {
@@ -115,33 +270,60 @@ export const WorkflowPage = () => {
       <div className="flex justify-between items-center px-6 py-3.5 border-b border-gray-100">
         <div className="flex gap-2.5 items-center">
           <Logo />
-          <LineButton onClick={() => navigate(`/workspace/${workspaceId}`)} isThin>
-            Back to workspace
-          </LineButton>
+          <div className="text-gray-200">/ {workflowName}</div>
         </div>
 
-        <h1 className="text-black text-xl font-medium">{workflowName}</h1>
-
-        <div className="flex gap-2">
-          <LineButton className="text-sm">Save</LineButton>
-          <LineButton className="text-sm">Settings</LineButton>
-        </div>
+        <LineButton gray onClick={() => navigate(`/workspace/${workspaceId}`)} isThin>go to workspace</LineButton>
       </div>
 
       {/* React Flow Canvas */}
-      <div className="flex-1">
+      <div className="flex-1 relative">
         <ReactFlow
           nodes={nodes}
           edges={edges}
+          nodeTypes={nodeTypes}
           onNodesChange={onNodesChange}
           onEdgesChange={onEdgesChange}
           onConnect={onConnect}
+          onNodeClick={onNodeClick}
+          onPaneClick={onPaneClick}
           fitView
+          style={{
+            backgroundColor: "#efefef"
+          }}
         >
           <Controls />
-          <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
         </ReactFlow>
+
+        {/* Empty State */}
+        {nodes.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <p className="text-gray-200 text-base">
+              Touch the screen and create your first task
+            </p>
+          </div>
+        )}
       </div>
+
+      {/* Task Detail Panel */}
+      {selectedNode && (
+        <TaskDetailPanel
+          task={selectedNode.data}
+          isOpen={isPanelOpen}
+          onClose={() => setIsPanelOpen(false)}
+          onUpdate={handleTaskUpdate}
+          previousNodeOutput={getPreviousNodeOutput()}
+          workspaceMembers={workspaceMembers}
+        />
+      )}
     </div>
+  )
+}
+
+export const WorkflowPage = () => {
+  return (
+    <ReactFlowProvider>
+      <WorkflowPageContent />
+    </ReactFlowProvider>
   )
 }

@@ -81,15 +81,62 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
   }
 });
 
+// Helper function to validate and update node statuses
+function updateNodeStatuses(nodes: any[], edges: any[]) {
+  if (!Array.isArray(nodes)) return nodes;
+
+  // Create a map of node statuses
+  const nodeStatusMap = new Map();
+  nodes.forEach((node) => {
+    if (node.data) {
+      nodeStatusMap.set(node.id, node.data.status);
+    }
+  });
+
+  // Update each node's status based on logic
+  return nodes.map((node) => {
+    if (!node.data) return node;
+
+    const currentStatus = node.data.status;
+    const output = node.data.output;
+
+    // Find incoming edges (previous nodes)
+    const incomingEdges = edges.filter((edge: any) => edge.target === node.id);
+
+    // Determine if previous nodes are done
+    const hasPreviousNodes = incomingEdges.length > 0;
+    const allPreviousDone = incomingEdges.every((edge: any) => {
+      const sourceNode = nodes.find((n) => n.id === edge.source);
+      return sourceNode?.data?.status === 'done';
+    });
+
+    let newStatus = currentStatus;
+
+    // Logic: If no previous nodes or all previous nodes are done, status should be at least in_progress
+    if (currentStatus === 'pending' && (!hasPreviousNodes || allPreviousDone)) {
+      newStatus = 'progress';
+    }
+
+    // Logic: If output is written and status is progress, change to completed
+    if (output && output.trim() && currentStatus === 'progress') {
+      newStatus = 'completed';
+    }
+
+    return {
+      ...node,
+      data: {
+        ...node.data,
+        status: newStatus,
+      },
+    };
+  });
+}
+
 // PUT /api/workflows/:id - Update workflow
 router.put('/:id', async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
-    const { name } = req.body;
-
-    if (!name) {
-      return res.status(400).json({ error: 'Workflow name is required' });
-    }
+    const { name, nodes, edges } = req.body;
 
     const workflow = await prisma.workflow.findUnique({
       where: { id },
@@ -112,10 +159,27 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
+    // Build update data
+    const updateData: {
+      name?: string;
+      nodes?: any;
+      edges?: any;
+    } = {};
+
+    if (name !== undefined) updateData.name = name;
+
+    // Apply status validation logic if nodes are being updated
+    if (nodes !== undefined) {
+      const updatedEdges = edges !== undefined ? edges : (workflow.edges as any);
+      updateData.nodes = updateNodeStatuses(nodes, updatedEdges);
+    }
+
+    if (edges !== undefined) updateData.edges = edges;
+
     // Update workflow
     const updatedWorkflow = await prisma.workflow.update({
       where: { id },
-      data: { name },
+      data: updateData,
     });
 
     res.json(updatedWorkflow);

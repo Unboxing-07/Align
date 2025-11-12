@@ -14,6 +14,11 @@ export type CreateWorkflowResponse = {
   updatedAt: string;
 };
 
+export type UpdateWorkflowNodesRequest = {
+  nodes?: any[];
+  edges?: any[];
+};
+
 export const workflowService = {
   async createWorkflow(data: CreateWorkflowRequest): Promise<CreateWorkflowResponse> {
     return api.post<CreateWorkflowResponse>('/workflows', data);
@@ -25,6 +30,10 @@ export const workflowService = {
 
   async updateWorkflow(id: string, name: string): Promise<CreateWorkflowResponse> {
     return api.put<CreateWorkflowResponse>(`/workflows/${id}`, { name });
+  },
+
+  async updateWorkflowNodes(id: string, data: UpdateWorkflowNodesRequest): Promise<WorkflowType> {
+    return api.put<WorkflowType>(`/workflows/${id}`, data);
   },
 
   async deleteWorkflow(id: string): Promise<{ success: boolean }> {

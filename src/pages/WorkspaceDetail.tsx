@@ -41,7 +41,8 @@ export const WorkspaceDetail = () => {
   }
 
   const filteredWorkflows = workspace?.workflow.filter((w) => {
-    const isDone = w.doneNodeCount === w.totalNodeCount
+    // totalNodeCount가 0이면 In Progress, totalNodeCount > 0이고 모두 done이면 Done
+    const isDone = w.totalNodeCount > 0 && w.doneNodeCount === w.totalNodeCount
     return statusFilter === "done" ? isDone : !isDone
   }) || []
 

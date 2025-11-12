@@ -8,6 +8,6 @@ export type TaskType = {
   assignee: AssigneeType;
   input: string;
   output: string;
-  deadline: Date;
+  deadline: Date | string;
   status: TaskStatusType;
 };

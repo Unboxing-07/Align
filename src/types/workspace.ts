@@ -19,8 +19,8 @@ export type WorkspaceType = {
 export type WorkflowType = {
   id: string;
   name: string;
-  doneNodeCount: number;
-  totalNodeCount: number;
-  nodes: { id: string; data: TaskType }[];
-  edges: { id: string; from: string; to: string }[];
+  doneNodeCount?: number;
+  totalNodeCount?: number;
+  nodes: any[];
+  edges: any[];
 };

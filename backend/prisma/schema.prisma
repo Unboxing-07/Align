@@ -90,6 +90,8 @@ model Workflow {
   id          String   @id @default(uuid())
   workspaceId String
   name        String
+  nodes       Json     @default("[]")
+  edges       Json     @default("[]")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

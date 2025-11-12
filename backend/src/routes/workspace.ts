@@ -16,6 +16,32 @@ const router = Router();
 // All routes require authentication
 router.use(authMiddleware);
 
+// Helper function to calculate node counts
+function calculateNodeCounts(workflow: any) {
+  try {
+    const nodes = Array.isArray(workflow.nodes) ? workflow.nodes : [];
+    const edges = Array.isArray(workflow.edges) ? workflow.edges : [];
+
+    const totalNodeCount = nodes.length;
+    const doneNodeCount = nodes.filter((node: any) => node?.data?.status === 'done').length;
+
+    return {
+      totalNodeCount,
+      doneNodeCount,
+      nodes,
+      edges,
+    };
+  } catch (error) {
+    console.error('Error calculating node counts:', error);
+    return {
+      totalNodeCount: 0,
+      doneNodeCount: 0,
+      nodes: [],
+      edges: [],
+    };
+  }
+}
+
 // POST /api/workspaces - Create workspace
 router.post('/', async (req: AuthRequest, res: Response) => {
   try {
@@ -62,14 +88,17 @@ router.post('/', async (req: AuthRequest, res: Response) => {
         email: m.user.email,
         role: m.role,
       })),
-      workflow: workspace.workflows.map((w) => ({
-        id: w.id,
-        name: w.name,
-        doneNodeCount: 0,
-        totalNodeCount: 0,
-        nodes: [],
-        edges: [],
-      })),
+      workflow: workspace.workflows.map((w) => {
+        const counts = calculateNodeCounts(w);
+        return {
+          id: w.id,
+          name: w.name,
+          doneNodeCount: counts.doneNodeCount,
+          totalNodeCount: counts.totalNodeCount,
+          nodes: counts.nodes,
+          edges: counts.edges,
+        };
+      }),
     };
 
     res.status(201).json(response);
@@ -115,14 +144,17 @@ router.get('/', async (req: AuthRequest, res: Response) => {
         email: m.user.email,
         role: m.role,
       })),
-      workflow: workspace.workflows.map((w) => ({
-        id: w.id,
-        name: w.name,
-        doneNodeCount: 0,
-        totalNodeCount: 0,
-        nodes: [],
-        edges: [],
-      })),
+      workflow: workspace.workflows.map((w) => {
+        const counts = calculateNodeCounts(w);
+        return {
+          id: w.id,
+          name: w.name,
+          doneNodeCount: counts.doneNodeCount,
+          totalNodeCount: counts.totalNodeCount,
+          nodes: counts.nodes,
+          edges: counts.edges,
+        };
+      }),
     }));
 
     res.json(response);
@@ -174,14 +206,17 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
         email: m.user.email,
         role: m.role,
       })),
-      workflow: workspace.workflows.map((w) => ({
-        id: w.id,
-        name: w.name,
-        doneNodeCount: 0,
-        totalNodeCount: 0,
-        nodes: [],
-        edges: [],
-      })),
+      workflow: workspace.workflows.map((w) => {
+        const counts = calculateNodeCounts(w);
+        return {
+          id: w.id,
+          name: w.name,
+          doneNodeCount: counts.doneNodeCount,
+          totalNodeCount: counts.totalNodeCount,
+          nodes: counts.nodes,
+          edges: counts.edges,
+        };
+      }),
     };
 
     res.json(response);
@@ -243,14 +278,17 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
         email: m.user.email,
         role: m.role,
       })),
-      workflow: updatedWorkspace.workflows.map((w) => ({
-        id: w.id,
-        name: w.name,
-        doneNodeCount: 0,
-        totalNodeCount: 0,
-        nodes: [],
-        edges: [],
-      })),
+      workflow: updatedWorkspace.workflows.map((w) => {
+        const counts = calculateNodeCounts(w);
+        return {
+          id: w.id,
+          name: w.name,
+          doneNodeCount: counts.doneNodeCount,
+          totalNodeCount: counts.totalNodeCount,
+          nodes: counts.nodes,
+          edges: counts.edges,
+        };
+      }),
     };
 
     res.json(response);
