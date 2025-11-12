@@ -1,4 +1,5 @@
 import type { TaskType } from "./task";
+import type { Node, Edge } from "@xyflow/react";
 
 export type AssigneeType = {
   userId?: string;
@@ -16,11 +17,13 @@ export type WorkspaceType = {
   workflow: WorkflowType[];
 };
 
+export type TaskNode = Node<TaskType>;
+
 export type WorkflowType = {
   id: string;
   name: string;
   doneNodeCount?: number;
   totalNodeCount?: number;
-  nodes: any[];
-  edges: any[];
+  nodes: TaskNode[];
+  edges: Edge[];
 };

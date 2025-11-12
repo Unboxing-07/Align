@@ -260,7 +260,7 @@ export const TaskDetailPanel = ({
             <label className="block text-black text-base mb-2">INPUT</label>
             <div className="w-full min-h-12 border border-gray-100 rounded-lg px-4 py-3 flex items-center">
               {previousNodeOutput ? (
-                <p className="text-black text-base whitespace-pre-wrap break-words">
+                <p className="text-black text-base whitespace-pre-wrap wrap-break-word">
                   {previousNodeOutput}
                 </p>
               ) : (
