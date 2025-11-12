@@ -1,9 +1,12 @@
 import type { TaskType } from "./task";
 
 export type AssigneeType = {
+  userId?: string;
+  inviteId?: string;
   name: string;
   email: string;
   role: string;
+  isPending?: boolean;
 };
 
 export type WorkspaceType = {

@@ -1,10 +1,12 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Logo } from "../components/Logo"
 import { FatInput } from "../components/FatInput"
 import { WorkflowCard } from "../components/WorkflowCard"
 import { LineButton } from "../components/LineButton"
 import { Send } from "lucide-react"
+import { workspaceService } from "../services/workspace"
+import type { WorkspaceType } from "../types/workspace"
 
 type WorkflowStatus = "progress" | "done"
 
@@ -13,30 +15,59 @@ export const WorkspaceDetail = () => {
   const navigate = useNavigate()
   const [workflowInput, setWorkflowInput] = useState("")
   const [statusFilter, setStatusFilter] = useState<WorkflowStatus>("progress")
+  const [workspace, setWorkspace] = useState<WorkspaceType | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
-  const workspace = {
-    id,
-    name: "Workspace Name",
+  useEffect(() => {
+    if (id) {
+      loadWorkspace()
+    }
+  }, [id])
+
+  const loadWorkspace = async () => {
+    if (!id) return
+
+    try {
+      setLoading(true)
+      const data = await workspaceService.getWorkspace(id)
+      setWorkspace(data)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load workspace")
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const workflows = [
-    {
-      id: "1",
-      name: "Workflow name",
-      doneCount: 12,
-      totalCount: 120,
-      status: "progress" as WorkflowStatus,
-    },
-  ]
-
-  const filteredWorkflows = workflows.filter((w) => w.status === statusFilter)
+  const filteredWorkflows = workspace?.workflow.filter((w) => {
+    const isDone = w.doneNodeCount === w.totalNodeCount
+    return statusFilter === "done" ? isDone : !isDone
+  }) || []
 
   const handleCreateWorkflow = () => {
     if (workflowInput.trim()) {
       console.log("Creating workflow:", workflowInput)
-      // TODO: API 호출로 워크플로우 생성
+      // Workflow feature is excluded
       setWorkflowInput("")
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="w-full min-h-screen bg-white relative flex items-center justify-center">
+        <Logo absolute />
+        <p className="text-gray-200">Loading workspace...</p>
+      </div>
+    )
+  }
+
+  if (error || !workspace) {
+    return (
+      <div className="w-full min-h-screen bg-white relative flex items-center justify-center">
+        <Logo absolute />
+        <p className="text-red-500">{error || "Workspace not found"}</p>
+      </div>
+    )
   }
 
   return (

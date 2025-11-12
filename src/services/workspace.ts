@@ -49,15 +49,15 @@ export const workspaceService = {
     return api.post<WorkspaceMemberResponse>(`/workspaces/${workspaceId}/members`, data);
   },
 
-  async removeMember(workspaceId: string, email: string): Promise<{ success: boolean }> {
-    return api.delete<{ success: boolean }>(`/workspaces/${workspaceId}/members/${email}`);
+  async removeMember(workspaceId: string, userId: string): Promise<{ success: boolean }> {
+    return api.delete<{ success: boolean }>(`/workspaces/${workspaceId}/members/${userId}`);
   },
 
   async updateMemberRole(
     workspaceId: string,
-    email: string,
+    userId: string,
     role: string
   ): Promise<WorkspaceMemberResponse> {
-    return api.put<WorkspaceMemberResponse>(`/workspaces/${workspaceId}/members/${email}`, { role });
+    return api.put<WorkspaceMemberResponse>(`/workspaces/${workspaceId}/members/${userId}`, { role });
   },
 };

@@ -29,9 +29,10 @@ model Workspace {
   updatedAt DateTime @updatedAt
 
   // Relations
-  owner   User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  members WorkspaceMember[]
-  tasks   Task[]
+  owner          User              @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  members        WorkspaceMember[]
+  tasks          Task[]
+  pendingInvites PendingInvite[]
 }
 
 model WorkspaceMember {
@@ -68,6 +69,20 @@ model Task {
   @@index([workspaceId])
   @@index([assigneeId])
   @@index([status])
+}
+
+model PendingInvite {
+  id          String   @id @default(uuid())
+  workspaceId String
+  email       String
+  role        String
+  invitedAt   DateTime @default(now())
+
+  // Relations
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, email])
+  @@index([email])
 }
 
 enum TaskStatus {

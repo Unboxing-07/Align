@@ -41,6 +41,31 @@ router.post('/signup', async (req: Request, res: Response) => {
       },
     });
 
+    // Check for pending invites and auto-add user to workspaces
+    const pendingInvites = await prisma.pendingInvite.findMany({
+      where: { email },
+    });
+
+    if (pendingInvites.length > 0) {
+      // Add user to all workspaces with pending invites
+      await Promise.all(
+        pendingInvites.map(invite =>
+          prisma.workspaceMember.create({
+            data: {
+              workspaceId: invite.workspaceId,
+              userId: user.id,
+              role: invite.role,
+            },
+          })
+        )
+      );
+
+      // Delete processed invites
+      await prisma.pendingInvite.deleteMany({
+        where: { email },
+      });
+    }
+
     // Generate token
     const token = generateToken({
       userId: user.id,

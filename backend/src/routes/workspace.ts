@@ -56,6 +56,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
       id: workspace.id,
       name: workspace.name,
       assigneeList: workspace.members.map((m: WorkspaceMemberWithUser) => ({
+        userId: m.userId,
         name: m.user.name,
         email: m.user.email,
         role: m.role,
@@ -100,6 +101,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
       id: workspace.id,
       name: workspace.name,
       assigneeList: workspace.members.map((m: WorkspaceMemberWithUser) => ({
+        userId: m.userId,
         name: m.user.name,
         email: m.user.email,
         role: m.role,
@@ -150,6 +152,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
       id: workspace.id,
       name: workspace.name,
       assigneeList: workspace.members.map((m: WorkspaceMemberWithUser) => ({
+        userId: m.userId,
         name: m.user.name,
         email: m.user.email,
         role: m.role,
@@ -210,6 +213,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
       id: updatedWorkspace.id,
       name: updatedWorkspace.name,
       assigneeList: updatedWorkspace.members.map((m: WorkspaceMemberWithUser) => ({
+        userId: m.userId,
         name: m.user.name,
         email: m.user.email,
         role: m.role,
