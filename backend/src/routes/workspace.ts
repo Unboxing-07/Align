@@ -48,6 +48,7 @@ router.post('/', async (req: AuthRequest, res: Response) => {
             },
           },
         },
+        workflows: true,
       },
     });
 
@@ -61,7 +62,14 @@ router.post('/', async (req: AuthRequest, res: Response) => {
         email: m.user.email,
         role: m.role,
       })),
-      workflow: [], // Always empty (workflow feature excluded)
+      workflow: workspace.workflows.map((w) => ({
+        id: w.id,
+        name: w.name,
+        doneNodeCount: 0,
+        totalNodeCount: 0,
+        nodes: [],
+        edges: [],
+      })),
     };
 
     res.status(201).json(response);
@@ -93,6 +101,7 @@ router.get('/', async (req: AuthRequest, res: Response) => {
             },
           },
         },
+        workflows: true,
       },
     });
 
@@ -106,7 +115,14 @@ router.get('/', async (req: AuthRequest, res: Response) => {
         email: m.user.email,
         role: m.role,
       })),
-      workflow: [], // Always empty
+      workflow: workspace.workflows.map((w) => ({
+        id: w.id,
+        name: w.name,
+        doneNodeCount: 0,
+        totalNodeCount: 0,
+        nodes: [],
+        edges: [],
+      })),
     }));
 
     res.json(response);
@@ -134,6 +150,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
             },
           },
         },
+        workflows: true,
       },
     });
 
@@ -157,7 +174,14 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
         email: m.user.email,
         role: m.role,
       })),
-      workflow: [],
+      workflow: workspace.workflows.map((w) => ({
+        id: w.id,
+        name: w.name,
+        doneNodeCount: 0,
+        totalNodeCount: 0,
+        nodes: [],
+        edges: [],
+      })),
     };
 
     res.json(response);
@@ -205,6 +229,7 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
             },
           },
         },
+        workflows: true,
       },
     });
 
@@ -218,7 +243,14 @@ router.put('/:id', async (req: AuthRequest, res: Response) => {
         email: m.user.email,
         role: m.role,
       })),
-      workflow: [],
+      workflow: updatedWorkspace.workflows.map((w) => ({
+        id: w.id,
+        name: w.name,
+        doneNodeCount: 0,
+        totalNodeCount: 0,
+        nodes: [],
+        edges: [],
+      })),
     };
 
     res.json(response);

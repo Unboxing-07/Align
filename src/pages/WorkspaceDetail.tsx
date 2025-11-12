@@ -6,6 +6,7 @@ import { WorkflowCard } from "../components/WorkflowCard"
 import { LineButton } from "../components/LineButton"
 import { Send } from "lucide-react"
 import { workspaceService } from "../services/workspace"
+import { workflowService } from "../services/workflow"
 import type { WorkspaceType } from "../types/workspace"
 
 type WorkflowStatus = "progress" | "done"
@@ -44,11 +45,19 @@ export const WorkspaceDetail = () => {
     return statusFilter === "done" ? isDone : !isDone
   }) || []
 
-  const handleCreateWorkflow = () => {
-    if (workflowInput.trim()) {
-      console.log("Creating workflow:", workflowInput)
-      // Workflow feature is excluded
-      setWorkflowInput("")
+  const handleCreateWorkflow = async () => {
+    if (!id) return
+
+    try {
+      const workflowName = `${workspace?.workflow.length ? workspace.workflow.length + 1 : 1}th workflow`
+      const newWorkflow = await workflowService.createWorkflow({
+        workspaceId: id,
+        name: workflowName,
+      })
+      // Navigate to the new workflow page
+      navigate(`/workspace/${id}/workflow/${newWorkflow.id}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create workflow")
     }
   }
 
@@ -97,11 +106,9 @@ export const WorkspaceDetail = () => {
             placeholder="Our team have to create a marketing poster"
             value={workflowInput}
             onChange={(e) => setWorkflowInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleCreateWorkflow()}
             className="w-full rounded-full"
           />
           <button
-            onClick={handleCreateWorkflow}
             className="absolute right-1.5 top-1/2 -translate-y-1/2 size-9 bg-black rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors"
             disabled={!workflowInput.trim()}
           >
@@ -128,7 +135,7 @@ export const WorkspaceDetail = () => {
             </LineButton>
           </div>
 
-          <LineButton className="text-xs py-1">+ New Workflow</LineButton>
+          <LineButton className="text-xs py-1" onClick={handleCreateWorkflow}>+ New Workflow</LineButton>
         </div>
 
         {/* Workflow list */}
@@ -137,8 +144,8 @@ export const WorkspaceDetail = () => {
             <WorkflowCard
               key={workflow.id}
               name={workflow.name}
-              doneCount={workflow.doneCount}
-              totalCount={workflow.totalCount}
+              doneCount={workflow.doneNodeCount}
+              totalCount={workflow.totalNodeCount}
               onClick={() => console.log(`Navigate to workflow ${workflow.id}`)}
             />
           ))}
