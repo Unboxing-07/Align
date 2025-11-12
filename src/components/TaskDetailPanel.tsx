@@ -24,7 +24,6 @@ export const TaskDetailPanel = ({
   const [editedTask, setEditedTask] = useState(task);
   const [originalTask, setOriginalTask] = useState(task);
   const [isEditMode, setIsEditMode] = useState(false);
-  const [noOutput, setNoOutput] = useState(false);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
   const outputSaveTimeout = useRef<NodeJS.Timeout | null>(null);
 
@@ -272,22 +271,7 @@ export const TaskDetailPanel = ({
 
           {/* OUTPUT Section */}
           <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-black text-base">OUTPUT</label>
-              {canEditOutput && (
-                <div className="flex items-center gap-0.5">
-                  <span className="text-gray-200 text-xs">
-                    No output, But completed this task
-                  </span>
-                  <button
-                    onClick={() => setNoOutput(!noOutput)}
-                    className={`w-5 h-5 border border-gray-100 rounded ${
-                      noOutput ? "bg-blue" : "bg-white"
-                    }`}
-                  />
-                </div>
-              )}
-            </div>
+            <label className="block text-black text-base mb-2">OUTPUT</label>
             {canEditOutput ? (
               <textarea
                 value={editedTask.output}

@@ -39,7 +39,7 @@ const nodeTypes = {
 const WorkflowPageContent = () => {
   const { id: workspaceId, workflowId } = useParams()
   const navigate = useNavigate()
-  const { screenToFlowPosition, fitView } = useReactFlow()
+  const { fitView } = useReactFlow()
   const [nodes, setNodes] = useState<Node[]>(initialNodes)
   const [edges, setEdges] = useState<Edge[]>(initialEdges)
   const [workflowName, setWorkflowName] = useState<string>("")
@@ -112,7 +112,7 @@ const WorkflowPageContent = () => {
     }, 50)
 
     return () => clearTimeout(layoutTimer)
-  }, [JSON.stringify(edges.map(e => ({s: e.source, t: e.target}))), nodes.length])
+  }, [JSON.stringify(edges.map(e => ({ s: e.source, t: e.target }))), nodes.length])
 
   useEffect(() => {
     if (workflowId) {
@@ -307,7 +307,7 @@ const WorkflowPageContent = () => {
   }, [selectedNode, edges, nodes])
 
   const onPaneClick = useCallback(
-    async (event: React.MouseEvent) => {
+    async () => {
       // Only allow creating the first node via click
       if (nodes.length > 0) return
 
@@ -438,6 +438,10 @@ const WorkflowPageContent = () => {
           nodesDraggable={false}
           nodesConnectable={true}
           fitView
+          defaultEdgeOptions={{
+            style: { stroke: '#D9D9D9', strokeWidth: 2 },
+            // type: 'smoothstep',
+          }}
           style={{
             backgroundColor: "#efefef"
           }}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useReactFlow, type NodeProps } from "@xyflow/react";
+import { useReactFlow, type NodeProps, Handle, Position } from "@xyflow/react";
 import type { TaskType } from "../types/task";
 import { TaskNode } from "./TaskNode";
 import { Plus, Trash2 } from "lucide-react";
@@ -102,7 +102,23 @@ export const TaskNodeWrapper = (props: NodeProps) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      {/* Input Handle (Left) */}
+      <Handle
+        type="target"
+        position={Position.Left}
+        isConnectable={false}
+        style={{ background: '#d9d9d9', width: 10, height: 10 }}
+      />
+
       <TaskNode task={task} />
+
+      {/* Output Handle (Right) */}
+      <Handle
+        type="source"
+        position={Position.Right}
+        isConnectable={false}
+        style={{ background: '#d9d9d9', width: 10, height: 10 }}
+      />
 
       {/* Delete Button (Top Left) */}
       {isHovered && (
