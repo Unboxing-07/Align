@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { Input } from "./Input"
-import { Button } from "./button"
+import { Button } from "./Button"
 import { X } from "lucide-react"
 
 type CreateWorkspaceModalProps = {
