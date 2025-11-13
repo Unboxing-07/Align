@@ -1,5 +1,5 @@
 import { api } from '../lib/api';
-import { LoginReqType, LoginResType, SignupReqType, SignupResType } from '../types/sign';
+import type { LoginReqType, LoginResType, SignupReqType, SignupResType } from '../types/sign';
 
 export const authService = {
   async login(data: LoginReqType): Promise<LoginResType> {

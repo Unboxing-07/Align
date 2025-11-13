@@ -1,5 +1,5 @@
 import { api } from '../lib/api';
-import { WorkspaceType } from '../types/workspace';
+import type { WorkspaceType } from '../types/workspace';
 
 export type CreateWorkspaceRequest = {
   name: string;

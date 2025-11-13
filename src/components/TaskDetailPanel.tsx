@@ -25,7 +25,7 @@ export const TaskDetailPanel = ({
   const [originalTask, setOriginalTask] = useState(task);
   const [isEditMode, setIsEditMode] = useState(false);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
-  const outputSaveTimeout = useRef<NodeJS.Timeout | null>(null);
+  const outputSaveTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Update tasks when prop changes
   useEffect(() => {

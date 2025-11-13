@@ -1,5 +1,5 @@
 import { api } from '../lib/api';
-import { TaskType, TaskStatusType } from '../types/task';
+import type { TaskType, TaskStatusType } from '../types/task';
 
 export type CreateTaskRequest = {
   title: string;

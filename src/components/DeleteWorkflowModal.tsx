@@ -53,7 +53,7 @@ export const DeleteWorkflowModal = ({ isOpen, onClose, onDelete, workflowName }:
         <div className="flex gap-3">
           <Button
             size="small"
-            className="flex-1 !bg-red-500 hover:!bg-red-600"
+            className="flex-1 bg-red-500! hover:bg-red-600!"
             onClick={handleDelete}
           >
             Delete
