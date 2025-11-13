@@ -28,7 +28,7 @@ export const Login = () => {
   }
 
   return (
-    <div className="bg-[#999999] w-screen h-screen flex">
+    <div className="bg-[url('/bg.jpg')] w-screen h-screen flex">
       <div className="w-160 h-full bg-white relative flex justify-center items-center">
         <Logo absolute />
         <form onSubmit={handleSubmit} className="flex flex-col gap-16 items-center justify-center w-92.5">
