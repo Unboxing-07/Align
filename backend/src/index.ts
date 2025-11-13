@@ -6,6 +6,7 @@ import workspaceRoutes from './routes/workspace';
 import memberRoutes from './routes/member';
 import taskRoutes from './routes/task';
 import workflowRoutes from './routes/workflow';
+import promptRoutes from './routes/prompt';
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.use('/api/workspaces', workspaceRoutes);
 app.use('/api/workspaces', memberRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/workflows', workflowRoutes);
+app.use('/api/prompt', promptRoutes);
 
 // 404 handler
 app.use((req, res) => {
