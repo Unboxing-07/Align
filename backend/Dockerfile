@@ -2,21 +2,33 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dependencies
+# Install all dependencies (needed for build)
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
-# Copy Prisma schema
-COPY prisma ./prisma
+# Copy source code and configuration
+COPY . .
 
 # Generate Prisma Client
 RUN npx prisma generate
 
-# Copy source code
-COPY . .
+# Build TypeScript
+RUN npm run build
 
-# Expose ports
-EXPOSE 3000 5555
+# Remove dev dependencies to reduce image size
+RUN npm prune --production
 
-# Run migrations and start app
-CMD npx prisma migrate deploy && npm run dev
+# Environment variables
+ENV NODE_ENV=production
+ENV PORT=8080
+
+# Expose Cloud Run port
+EXPOSE 8080
+
+# Start the application
+# Option 1 (Recommended): Run migrations separately via Cloud Run Job
+CMD ["node", "dist/index.js"]
+
+# Option 2 (Alternative): Run migrations on startup (less stable)
+# Uncomment the line below and comment out the line above if you need migrations on startup
+# CMD ["sh", "-c", "npx prisma migrate deploy && node dist/index.js"]

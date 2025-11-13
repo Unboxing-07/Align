@@ -1,0 +1,39 @@
+services:
+  db:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: align
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-align123_change_in_prod}
+      POSTGRES_DB: align
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U align"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  backend:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://align:${DB_PASSWORD:-align123_change_in_prod}@db:5432/align
+      JWT_SECRET: ${JWT_SECRET:-change-this-secret}
+      JWT_EXPIRES_IN: 7d
+      PORT: 8080
+      FRONTEND_URL: ${FRONTEND_URL:-https://align-azure.vercel.app}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      USE_REAL_AI: ${USE_REAL_AI:-true}
+      NODE_ENV: production
+    ports:
+      - "8080:8080"
+    command: sh -c "npx prisma migrate deploy && node dist/index.js"
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
