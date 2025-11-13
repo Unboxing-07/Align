@@ -16,7 +16,7 @@ RUN npx prisma generate
 COPY . .
 
 # Expose ports
-EXPOSE 3000 5555
+EXPOSE 3000 8080
 
 # Run migrations and start app
 CMD npx prisma migrate deploy && npm run dev
