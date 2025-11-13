@@ -85,11 +85,69 @@ function buildPromptGuideline(request: PromptRequest): string {
     <action>
       <name>modify workflow</name>
       <requires>
-        - inputed-workflow-nullable: required
+        - user-input: required (수정 요청 내용)
+        - inputed-workflow-nullable: required (기존 워크플로우)
       </requires>
       <process>
-        - 최소 수정 원칙으로 변경사항 반영
-        - DAG 재검증
+        ## 핵심 원칙: 기존 워크플로우 최대한 보존, 요청된 변경사항만 반영
+
+        ### 1. 기존 구조 분석
+        - inputed_workflow의 tasks 개수, ID, flow 구조를 먼저 파악
+        - 각 task의 현재 상태(status, assignee, deadline 등) 확인
+
+        ### 2. 사용자 요청 분석 및 적용
+        user_input을 분석하여 다음 중 해당하는 변경사항만 적용:
+
+        a) **Task 이름(name) 수정**
+           - 특정 task의 이름 변경 요청 시: 해당 task의 name만 업데이트
+           - 예: "Design 태스크를 'Poster Design'으로 변경" → 해당 task의 name만 수정
+
+        b) **Task 설명(description) 수정**
+           - 특정 task의 설명 변경/추가 요청 시: 해당 task의 description만 업데이트
+           - 2-3문장으로 작성하며 작업 내용과 기대 결과물 포함
+           - 예: "Design 태스크에 브랜드 가이드라인 준수 내용 추가" → description 보강
+
+        c) **Deadline 수정**
+           - 특정 task나 전체 workflow의 deadline 설정/변경 요청 시
+           - 예: "첫 번째 태스크 마감일을 다음 주 금요일로" → deadline 업데이트
+           - 예: "모든 태스크 마감일을 일주일 뒤로" → 모든 task의 deadline 조정
+
+        d) **Task 순서(flow) 변경**
+           - task 간 선후행 관계 변경 요청 시: flows 배열 재구성
+           - 예: "Review를 Design 전에" → flows 순서 변경
+           - 반드시 DAG 유지 (순환 참조 금지)
+
+        e) **Task 추가**
+           - 새로운 task 추가 요청 시:
+             * 새 task 생성 (적절한 ID 부여)
+             * 기존 tasks에 추가
+             * 적절한 위치에 flow 연결
+             * 가장 적합한 assignee 자동 배정
+
+        f) **Task 삭제**
+           - 특정 task 삭제 요청 시:
+             * tasks 배열에서 제거
+             * 관련 flows도 함께 제거 또는 재연결
+
+        g) **Assignee 변경**
+           - 특정 task의 담당자 변경 요청 시
+           - assignee-list에서 적절한 사람 선택
+
+        ### 3. 변경되지 않은 항목 보존
+        - 사용자가 언급하지 않은 task는 **완전히 그대로 유지**
+        - 기존 task의 ID는 **절대 변경하지 않음** (새로 추가되는 task 제외)
+        - 기존 task의 status는 **그대로 유지** (특별히 요청되지 않는 한)
+        - 기존 assignee는 **그대로 유지** (특별히 요청되지 않는 한)
+        - output 필드는 사용자 입력 공간이므로 **절대 수정하지 않음**
+
+        ### 4. 검증
+        - 수정된 workflow가 여전히 유효한 DAG인지 확인
+        - 모든 flow의 from/to가 존재하는 task ID를 참조하는지 확인
+        - workflow_name은 특별히 요청되지 않으면 유지
+
+        ### 예시
+        user_input: "첫 번째 태스크의 마감일을 2025-01-15로 설정하고, Review 태스크 설명을 더 상세하게 작성해줘"
+        → 첫 번째 task의 deadline만 업데이트, Review task의 description만 보강, 나머지는 모두 그대로 유지
       </process>
     </action>
   </action-list>
@@ -147,7 +205,46 @@ ${assigneeListXML}
  * Generates a mock workflow for demo purposes
  */
 function generateMockWorkflow(request: PromptRequest): PromptWorkflow {
-  const { user_input, assignee_list } = request;
+  const { action, user_input, inputed_workflow, assignee_list } = request;
+
+  // Handle modify action: preserve existing workflow structure
+  if (action === "modify" && inputed_workflow) {
+    // For mock mode, we'll simulate basic modifications based on user input
+    const modified = { ...inputed_workflow };
+    const input = (user_input || "").toLowerCase();
+
+    // Simulate deadline modifications
+    if (input.includes("deadline") || input.includes("마감") || input.includes("due")) {
+      modified.tasks = modified.tasks.map((task, index) => {
+        // Set deadlines to 7 days from now for demonstration
+        const deadline = new Date();
+        deadline.setDate(deadline.getDate() + 7 + index * 2);
+        return {
+          ...task,
+          deadline: deadline.toISOString().split("T")[0],
+        };
+      });
+      modified.checks.messages.push("Mock: Updated deadlines based on request");
+    }
+
+    // Simulate description enhancements
+    if (input.includes("description") || input.includes("설명") || input.includes("detail")) {
+      modified.tasks = modified.tasks.map((task) => ({
+        ...task,
+        description: task.description + " (Enhanced with more details based on your request.)",
+      }));
+      modified.checks.messages.push("Mock: Enhanced task descriptions");
+    }
+
+    // Add note about mock mode
+    if (!modified.checks.messages.includes("Mock workflow modification")) {
+      modified.checks.messages.push(
+        "Mock workflow modification (set USE_REAL_AI=true for AI-powered modifications)"
+      );
+    }
+
+    return modified;
+  }
   const input = (user_input || "").toLowerCase();
 
   // Enhanced task extraction with action words
@@ -482,10 +579,11 @@ export async function processPromptWorkflow(
 
       const workflow = request.inputed_workflow;
 
-      // Perform auto delegation
+      // Perform auto delegation (force reassign all tasks)
       const delegatedTasks = autoDelegateTasks(
         workflow.tasks,
-        request.assignee_list
+        request.assignee_list,
+        true // Force reassign all tasks
       );
 
       // Update workflow

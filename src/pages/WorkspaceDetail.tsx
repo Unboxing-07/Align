@@ -127,7 +127,7 @@ export const WorkspaceDetail = () => {
   }
 
   return (
-    <div className="w-full min-h-screen bg-white relative">
+    <div className="w-full min-h-screen bg-white relative pb-10">
       <div className="flex justify-between px-6 pt-3.5">
         <div className="flex gap-2.5 items-top">
           <Logo />

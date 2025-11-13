@@ -24,8 +24,11 @@ import { TaskDetailPanel } from "../components/TaskDetailPanel"
 import { api } from "../lib/api"
 import type { TaskType } from "../types/task"
 import type { AssigneeType, WorkspaceType } from "../types/workspace"
-import { PenLine, Check, X, Trash2 } from "lucide-react"
+import { PenLine, Check, X, Trash2, Sparkles, Send } from "lucide-react"
 import { DeleteWorkflowModal } from "../components/DeleteWorkflowModal"
+import { FatInput } from "../components/FatInput"
+import { processPromptWorkflow } from "../services/promptWorkflow"
+import { promptWorkflowToReactFlow, reactFlowToPromptWorkflow } from "../utils/promptToReactFlow"
 
 const elk = new ELK()
 
@@ -53,6 +56,8 @@ const WorkflowPageContent = () => {
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   const [isLayouting, setIsLayouting] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [workflowInput, setWorkflowInput] = useState("")
+  const [isGenerating, setIsGenerating] = useState(false)
 
   // ELK layout function
   const getLayoutedElements = useCallback(async (nodes: Node[], edges: Edge[]) => {
@@ -219,6 +224,167 @@ const WorkflowPageContent = () => {
     }
   }
 
+  const handleGenerateWorkflow = async () => {
+    if (!workflowId || !workflowInput.trim()) return
+
+    try {
+      setIsGenerating(true)
+      setError("")
+
+      // Convert current workflow to PromptWorkflow format
+      const currentWorkflow = reactFlowToPromptWorkflow(
+        nodes as Node<TaskType>[],
+        edges,
+        workflowName
+      )
+
+      // Call AI to modify workflow
+      const response = await processPromptWorkflow({
+        action: "modify",
+        user_input: workflowInput,
+        inputed_workflow: currentWorkflow,
+        assignee_list: workspaceMembers.map((a) => ({
+          name: a.name,
+          email: a.email,
+          role: a.role,
+        })),
+      })
+
+      if (!response.success || !response.workflow) {
+        throw new Error(response.error || "Failed to generate workflow")
+      }
+
+      // Convert PromptWorkflow to ReactFlow nodes/edges
+      const { nodes: newNodes, edges: newEdges } = promptWorkflowToReactFlow(response.workflow)
+
+      // Apply ELK layout to new nodes
+      const { nodes: layoutedNodes } = await getLayoutedElements(newNodes, newEdges)
+
+      // Update nodes and edges
+      setNodes(layoutedNodes)
+      setEdges(newEdges)
+
+      // Fit view to show all nodes
+      setTimeout(() => {
+        fitView({ padding: 0.2, duration: 200 })
+      }, 50)
+
+      // Save to backend
+      await workflowService.updateWorkflowNodes(workflowId, {
+        nodes: layoutedNodes,
+        edges: newEdges,
+      })
+
+      // Update workflow name if it changed
+      if (response.workflow.workflow_name !== workflowName) {
+        await workflowService.updateWorkflow(workflowId, response.workflow.workflow_name)
+        setWorkflowName(response.workflow.workflow_name)
+      }
+
+      // Clear input
+      setWorkflowInput("")
+    } catch (err) {
+      console.error("Generate workflow error:", err)
+      setError(err instanceof Error ? err.message : "Failed to generate workflow")
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+  const handleAutoDelegateAssignees = async () => {
+    if (!workflowId || nodes.length === 0 || workspaceMembers.length === 0) {
+      console.log("Auto-delegate blocked:", { workflowId, nodesCount: nodes.length, membersCount: workspaceMembers.length })
+      return
+    }
+
+    try {
+      setIsGenerating(true)
+      setError("")
+
+      console.log("Starting auto-delegate with:", {
+        nodesCount: nodes.length,
+        membersCount: workspaceMembers.length,
+        members: workspaceMembers
+      })
+
+      // Convert current workflow to PromptWorkflow format
+      const currentWorkflow = reactFlowToPromptWorkflow(
+        nodes as Node<TaskType>[],
+        edges,
+        workflowName
+      )
+
+      console.log("Current workflow:", currentWorkflow)
+      console.log("Current assignees BEFORE auto-delegate:",
+        currentWorkflow.tasks.map(t => ({
+          name: t.name,
+          assignee: t.assignee
+        }))
+      )
+
+      // Call auto_delegate action
+      const response = await processPromptWorkflow({
+        action: "auto_delegate",
+        inputed_workflow: currentWorkflow,
+        assignee_list: workspaceMembers.map((a) => ({
+          name: a.name,
+          email: a.email,
+          role: a.role,
+        })),
+      })
+
+      console.log("Auto-delegate response:", response)
+
+      if (!response.success || !response.workflow) {
+        throw new Error(response.error || "Failed to auto-delegate assignees")
+      }
+
+      console.log("New assignees AFTER auto-delegate:",
+        response.workflow.tasks.map(t => ({
+          name: t.name,
+          assignee: t.assignee
+        }))
+      )
+
+      // Convert PromptWorkflow to ReactFlow nodes/edges
+      const { nodes: newNodes, edges: newEdges } = promptWorkflowToReactFlow(response.workflow)
+
+      console.log("New nodes after auto-delegate:", newNodes)
+      console.log("New nodes assignees:",
+        newNodes.map((n) => ({
+          id: n.id,
+          title: (n.data as TaskType).title,
+          assignee: (n.data as TaskType).assignee
+        }))
+      )
+
+      // Apply ELK layout to new nodes
+      const { nodes: layoutedNodes } = await getLayoutedElements(newNodes, newEdges)
+
+      // Update nodes and edges
+      setNodes(layoutedNodes)
+      setEdges(newEdges)
+
+      // Fit view to show all nodes
+      setTimeout(() => {
+        fitView({ padding: 0.2, duration: 200 })
+      }, 50)
+
+      // Save to backend
+      await workflowService.updateWorkflowNodes(workflowId, {
+        nodes: layoutedNodes,
+        edges: newEdges,
+      })
+
+      console.log("Auto-delegate completed successfully")
+    } catch (err) {
+      console.error("Auto-delegate error:", err)
+      setError(err instanceof Error ? err.message : "Failed to auto-delegate assignees")
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => setNodes((nds) => applyNodeChanges(changes, nds)),
     []
@@ -369,16 +535,7 @@ const WorkflowPageContent = () => {
     [nodes.length, workflowId]
   )
 
-  if (loading) {
-    return (
-      <div className="w-full h-screen bg-white relative flex items-center justify-center">
-        <Logo absolute />
-        <p className="text-gray-200">Loading workflow...</p>
-      </div>
-    )
-  }
-
-  if (error) {
+  if (error && !loading && nodes.length === 0) {
     return (
       <div className="w-full h-screen bg-white relative flex items-center justify-center">
         <Logo absolute />
@@ -472,13 +629,59 @@ const WorkflowPageContent = () => {
         </ReactFlow>
 
         {/* Empty State */}
-        {nodes.length === 0 && (
+        {nodes.length === 0 && !loading && !isGenerating && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <p className="text-gray-200 text-base">
               Touch the screen and create your first task
             </p>
           </div>
         )}
+
+        {/* Loading Overlay */}
+        {(loading || isGenerating) && (
+          <div className="absolute inset-0 bg-white/70 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="flex flex-col items-center gap-3">
+              <div className="size-12 border-4 border-gray-100 border-t-blue rounded-full animate-spin" />
+              <p className="text-gray-200 text-base">
+                {isGenerating ? "Generating workflow..." : "Loading..."}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Workflow Input */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2">
+        <button
+          onClick={handleAutoDelegateAssignees}
+          disabled={nodes.length === 0 || workspaceMembers.length === 0 || isGenerating}
+          className="bg-white rounded-full size-12 flex justify-center items-center border border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Auto-assign tasks to team members"
+        >
+          <Sparkles size={24} color="#828282" />
+        </button>
+
+        <div className="relative w-135">
+          <FatInput
+            placeholder="Our team have to create a marketing poster"
+            value={workflowInput}
+            onChange={(e) => setWorkflowInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault()
+                handleGenerateWorkflow()
+              }
+            }}
+            className="w-full rounded-full"
+          />
+          <button
+            onClick={handleGenerateWorkflow}
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 size-9 bg-black rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={!workflowInput.trim()}
+          >
+            <Send size={20} className="text-white" />
+          </button>
+        </div>
       </div>
 
       {/* Task Detail Panel */}
