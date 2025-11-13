@@ -4,14 +4,13 @@ import { Logo } from "../components/Logo"
 import { FatInput } from "../components/FatInput"
 import { WorkflowCard } from "../components/WorkflowCard"
 import { LineButton } from "../components/LineButton"
-import { WorkflowPreview } from "../components/WorkflowPreview"
+import { Loading } from "../components/Loading"
 import { Send } from "lucide-react"
 import { workspaceService } from "../services/workspace"
 import { workflowService } from "../services/workflow"
 import { processPromptWorkflow } from "../services/promptWorkflow"
 import { promptWorkflowToReactFlow } from "../utils/promptToReactFlow"
 import type { WorkspaceType } from "../types/workspace"
-import type { PromptWorkflow } from "../types/prompt"
 
 type WorkflowStatus = "progress" | "done"
 
@@ -24,8 +23,6 @@ export const WorkspaceDetail = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [isGenerating, setIsGenerating] = useState(false)
-  const [generatedWorkflow, setGeneratedWorkflow] = useState<PromptWorkflow | null>(null)
-  const [isCreatingWorkflow, setIsCreatingWorkflow] = useState(false)
 
   useEffect(() => {
     if (id) {
@@ -91,30 +88,13 @@ export const WorkspaceDetail = () => {
         throw new Error(response.error || "Failed to generate workflow")
       }
 
-      // Show preview instead of creating immediately
-      setGeneratedWorkflow(response.workflow)
-    } catch (err) {
-      console.error("Generate workflow error:", err)
-      setError(err instanceof Error ? err.message : "Failed to generate workflow")
-    } finally {
-      setIsGenerating(false)
-    }
-  }
-
-  const handleConfirmWorkflow = async () => {
-    if (!id || !generatedWorkflow) return
-
-    try {
-      setIsCreatingWorkflow(true)
-      setError("")
-
       // Convert PromptWorkflow to ReactFlow nodes/edges
-      const { nodes, edges } = promptWorkflowToReactFlow(generatedWorkflow)
+      const { nodes, edges } = promptWorkflowToReactFlow(response.workflow)
 
       // Create workflow in backend
       const newWorkflow = await workflowService.createWorkflow({
         workspaceId: id,
-        name: generatedWorkflow.workflow_name,
+        name: response.workflow.workflow_name,
       })
 
       // Save nodes and edges
@@ -123,29 +103,18 @@ export const WorkspaceDetail = () => {
         edges,
       })
 
-      // Clear state and navigate
+      // Clear input and navigate
       setWorkflowInput("")
-      setGeneratedWorkflow(null)
       navigate(`/workspace/${id}/workflow/${newWorkflow.id}`)
     } catch (err) {
-      console.error("Create workflow error:", err)
-      setError(err instanceof Error ? err.message : "Failed to create workflow")
-    } finally {
-      setIsCreatingWorkflow(false)
+      console.error("Generate workflow error:", err)
+      setError(err instanceof Error ? err.message : "Failed to generate workflow")
+      setIsGenerating(false)
     }
   }
 
-  const handleCancelPreview = () => {
-    setGeneratedWorkflow(null)
-  }
-
-  if (loading) {
-    return (
-      <div className="w-full min-h-screen bg-white relative flex items-center justify-center">
-        <Logo absolute />
-        <p className="text-gray-200">Loading workspace...</p>
-      </div>
-    )
+  if (loading || isGenerating) {
+    return <Loading />
   }
 
   if (error || !workspace) {
@@ -159,16 +128,6 @@ export const WorkspaceDetail = () => {
 
   return (
     <div className="w-full min-h-screen bg-white relative">
-      {/* Workflow Preview Modal */}
-      {generatedWorkflow && (
-        <WorkflowPreview
-          workflow={generatedWorkflow}
-          onConfirm={handleConfirmWorkflow}
-          onCancel={handleCancelPreview}
-          isLoading={isCreatingWorkflow}
-        />
-      )}
-
       <div className="flex justify-between px-6 pt-3.5">
         <div className="flex gap-2.5 items-top">
           <Logo />
@@ -201,18 +160,13 @@ export const WorkspaceDetail = () => {
               }
             }}
             className="w-full rounded-full"
-            disabled={isGenerating}
           />
           <button
             onClick={handleGenerateWorkflow}
             className="absolute right-1.5 top-1/2 -translate-y-1/2 size-9 bg-black rounded-full flex items-center justify-center hover:bg-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={!workflowInput.trim() || isGenerating}
+            disabled={!workflowInput.trim()}
           >
-            {isGenerating ? (
-              <div className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-            ) : (
-              <Send size={20} className="text-white" />
-            )}
+            <Send size={20} className="text-white" />
           </button>
         </div>
 

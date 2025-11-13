@@ -17,7 +17,7 @@ export function promptWorkflowToReactFlow(
   promptWorkflow.tasks.forEach((task, index) => {
     const taskData: TaskType = {
       title: task.name,
-      description: task.notes || `Output: ${task.output.join(", ")}`,
+      description: task.description,
       assignee: {
         name: task.assignee.name || "Unassigned",
         email: task.assignee.email || "unassigned@example.com",

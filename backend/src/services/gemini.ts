@@ -56,6 +56,7 @@ export async function generateWorkflowJSON(prompt: string): Promise<any> {
             properties: {
               id: { type: "string" },
               name: { type: "string" },
+              description: { type: "string" },
               output: { type: "array", items: { type: "string" } },
               deadline: { type: ["string", "null"] },
               status: { type: "string", enum: ["PENDING", "IN_PROGRESS", "COMPLETED", "DONE"] },
@@ -71,7 +72,7 @@ export async function generateWorkflowJSON(prompt: string): Promise<any> {
               },
               notes: { type: ["string", "null"] },
             },
-            required: ["id", "name", "output", "deadline", "status", "assignee", "notes"],
+            required: ["id", "name", "description", "output", "deadline", "status", "assignee", "notes"],
           },
         },
         flows: {

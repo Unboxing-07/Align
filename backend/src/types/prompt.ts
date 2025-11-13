@@ -14,6 +14,7 @@ export type PromptAssignee = {
 export type PromptTask = {
   id: string; // Must match pattern: ^[a-z0-9][a-z0-9-]{2,62}$
   name: string;
+  description: string; // Detailed description of what needs to be done
   output: string[];
   deadline: string | null; // Format: YYYY-MM-DD or null
   status: TaskStatus;
