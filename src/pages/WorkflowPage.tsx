@@ -24,7 +24,8 @@ import { TaskDetailPanel } from "../components/TaskDetailPanel"
 import { api } from "../lib/api"
 import type { TaskType } from "../types/task"
 import type { AssigneeType, WorkspaceType } from "../types/workspace"
-import { PenLine, Check, X } from "lucide-react"
+import { PenLine, Check, X, Trash2 } from "lucide-react"
+import { DeleteWorkflowModal } from "../components/DeleteWorkflowModal"
 
 const elk = new ELK()
 
@@ -51,6 +52,7 @@ const WorkflowPageContent = () => {
   const [selectedNode, setSelectedNode] = useState<Node<TaskType> | null>(null)
   const [isPanelOpen, setIsPanelOpen] = useState(false)
   const [isLayouting, setIsLayouting] = useState(false)
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   // ELK layout function
   const getLayoutedElements = useCallback(async (nodes: Node[], edges: Edge[]) => {
@@ -202,6 +204,19 @@ const WorkflowPageContent = () => {
   const handleCancelEditName = () => {
     setEditingName(false)
     setEditedWorkflowName("")
+  }
+
+  const handleDeleteWorkflow = async () => {
+    if (!workflowId || !workspaceId) return
+
+    try {
+      await workflowService.deleteWorkflow(workflowId)
+      // Navigate back to workspace after deletion
+      navigate(`/workspace/${workspaceId}`)
+    } catch (err) {
+      console.error("Failed to delete workflow:", err)
+      setError("Failed to delete workflow")
+    }
   }
 
   const onNodesChange = useCallback(
@@ -417,6 +432,13 @@ const WorkflowPageContent = () => {
               >
                 <PenLine size={16} className="text-gray-200" />
               </button>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="p-1 hover:bg-gray-50 rounded"
+                title="Delete workflow"
+              >
+                <Trash2 size={16} className="text-gray-200" />
+              </button>
             </div>
           )}
         </div>
@@ -470,6 +492,14 @@ const WorkflowPageContent = () => {
           workspaceMembers={workspaceMembers}
         />
       )}
+
+      {/* Delete Workflow Modal */}
+      <DeleteWorkflowModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onDelete={handleDeleteWorkflow}
+        workflowName={workflowName}
+      />
     </div>
   )
 }
